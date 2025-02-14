@@ -15,6 +15,8 @@
 /* only real 64bit, not x32 */
 #if defined(ENDIAN_64BITWORD) && !defined(ENDIAN_64BITWORD_X32)
    #define CONSTPTR(n) CONST64(n)
+#elif defined(_WIN64)
+   #define CONSTPTR(n) n ## ULL
 #else
    #define CONSTPTR(n) n ## uL
 #endif
