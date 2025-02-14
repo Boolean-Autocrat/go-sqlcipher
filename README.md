@@ -27,14 +27,13 @@ See [migrating databases](https://www.zetetic.net/sqlcipher/sqlcipher-api/#Migra
 
 To upgrade your Go code to the 4.x series, change the import path to
 
-    "github.com/mutecomm/go-sqlcipher/v4"
+    "github.com/Boolean-Autocrat/go-sqlcipher"
 
 ### Installation
 
 This package can be installed with the go get command:
 
     go get github.com/mutecomm/go-sqlcipher
-
 
 ### Documentation
 
@@ -69,7 +68,6 @@ Use the function
 to check whether a database file is encrypted or not.
 
 Examples can be found under the `./_example` directory
-
 
 ### License
 
