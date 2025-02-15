@@ -19,8 +19,7 @@ int hmac_memory(int hash,
 int hmac_memory_multi(int hash,
                 const unsigned char *key,  unsigned long keylen,
                       unsigned char *out,  unsigned long *outlen,
-                const unsigned char *in,   unsigned long inlen, ...)
-                LTC_NULL_TERMINATED;
+                const unsigned char *in,   unsigned long inlen, ...);
 int hmac_file(int hash, const char *fname, const unsigned char *key,
               unsigned long keylen,
               unsigned char *out, unsigned long *outlen);
@@ -48,8 +47,7 @@ int omac_memory(int cipher,
 int omac_memory_multi(int cipher,
                 const unsigned char *key, unsigned long keylen,
                       unsigned char *out, unsigned long *outlen,
-                const unsigned char *in,  unsigned long inlen, ...)
-                LTC_NULL_TERMINATED;
+                const unsigned char *in,  unsigned long inlen, ...);
 int omac_file(int cipher,
               const unsigned char *key, unsigned long keylen,
               const          char *filename,
@@ -85,8 +83,7 @@ int pmac_memory(int cipher,
 int pmac_memory_multi(int cipher,
                 const unsigned char *key, unsigned long keylen,
                       unsigned char *out, unsigned long *outlen,
-                const unsigned char *in, unsigned long inlen, ...)
-                LTC_NULL_TERMINATED;
+                const unsigned char *in, unsigned long inlen, ...);
 
 int pmac_file(int cipher,
              const unsigned char *key, unsigned long keylen,
@@ -115,10 +112,7 @@ int poly1305_init(poly1305_state *st, const unsigned char *key, unsigned long ke
 int poly1305_process(poly1305_state *st, const unsigned char *in, unsigned long inlen);
 int poly1305_done(poly1305_state *st, unsigned char *mac, unsigned long *maclen);
 int poly1305_memory(const unsigned char *key, unsigned long keylen, const unsigned char *in, unsigned long inlen, unsigned char *mac, unsigned long *maclen);
-int poly1305_memory_multi(const unsigned char *key, unsigned long keylen,
-                                unsigned char *mac, unsigned long *maclen,
-                          const unsigned char *in,  unsigned long inlen, ...)
-                          LTC_NULL_TERMINATED;
+int poly1305_memory_multi(const unsigned char *key, unsigned long keylen, unsigned char *mac, unsigned long *maclen, const unsigned char *in,  unsigned long inlen, ...);
 int poly1305_file(const char *fname, const unsigned char *key, unsigned long keylen, unsigned char *mac, unsigned long *maclen);
 int poly1305_test(void);
 #endif /* LTC_POLY1305 */
@@ -129,10 +123,7 @@ int blake2smac_init(blake2smac_state *st, unsigned long outlen, const unsigned c
 int blake2smac_process(blake2smac_state *st, const unsigned char *in, unsigned long inlen);
 int blake2smac_done(blake2smac_state *st, unsigned char *mac, unsigned long *maclen);
 int blake2smac_memory(const unsigned char *key, unsigned long keylen, const unsigned char *in, unsigned long inlen, unsigned char *mac, unsigned long *maclen);
-int blake2smac_memory_multi(const unsigned char *key, unsigned long keylen,
-                                  unsigned char *mac, unsigned long *maclen,
-                            const unsigned char *in,  unsigned long inlen, ...)
-                            LTC_NULL_TERMINATED;
+int blake2smac_memory_multi(const unsigned char *key, unsigned long keylen, unsigned char *mac, unsigned long *maclen, const unsigned char *in,  unsigned long inlen, ...);
 int blake2smac_file(const char *fname, const unsigned char *key, unsigned long keylen, unsigned char *mac, unsigned long *maclen);
 int blake2smac_test(void);
 #endif /* LTC_BLAKE2SMAC */
@@ -143,10 +134,7 @@ int blake2bmac_init(blake2bmac_state *st, unsigned long outlen, const unsigned c
 int blake2bmac_process(blake2bmac_state *st, const unsigned char *in, unsigned long inlen);
 int blake2bmac_done(blake2bmac_state *st, unsigned char *mac, unsigned long *maclen);
 int blake2bmac_memory(const unsigned char *key, unsigned long keylen, const unsigned char *in, unsigned long inlen, unsigned char *mac, unsigned long *maclen);
-int blake2bmac_memory_multi(const unsigned char *key, unsigned long keylen,
-                                  unsigned char *mac, unsigned long *maclen,
-                            const unsigned char *in,  unsigned long inlen, ...)
-                            LTC_NULL_TERMINATED;
+int blake2bmac_memory_multi(const unsigned char *key, unsigned long keylen, unsigned char *mac, unsigned long *maclen, const unsigned char *in,  unsigned long inlen, ...);
 int blake2bmac_file(const char *fname, const unsigned char *key, unsigned long keylen, unsigned char *mac, unsigned long *maclen);
 int blake2bmac_test(void);
 #endif /* LTC_BLAKE2BMAC */
@@ -198,8 +186,7 @@ int xcbc_memory(int cipher,
 int xcbc_memory_multi(int cipher,
                 const unsigned char *key, unsigned long keylen,
                       unsigned char *out, unsigned long *outlen,
-                const unsigned char *in,  unsigned long inlen, ...)
-                LTC_NULL_TERMINATED;
+                const unsigned char *in,  unsigned long inlen, ...);
 int xcbc_file(int cipher,
               const unsigned char *key, unsigned long keylen,
               const          char *filename,
@@ -233,8 +220,7 @@ int f9_memory(int cipher,
 int f9_memory_multi(int cipher,
                 const unsigned char *key, unsigned long keylen,
                       unsigned char *out, unsigned long *outlen,
-                const unsigned char *in,  unsigned long inlen, ...)
-                LTC_NULL_TERMINATED;
+                const unsigned char *in,  unsigned long inlen, ...);
 int f9_file(int cipher,
               const unsigned char *key, unsigned long keylen,
               const          char *fname,
@@ -358,10 +344,10 @@ typedef struct {
    unsigned char     aSum_current[MAXBLOCKSIZE],    /* AAD related helper variable */
                      aOffset_current[MAXBLOCKSIZE], /* AAD related helper variable */
                      adata_buffer[MAXBLOCKSIZE];    /* AAD buffer */
-
-   symmetric_key     key;                     /* scheduled key for cipher */
    int               adata_buffer_bytes;            /* bytes in AAD buffer */
    unsigned long     ablock_index;                  /* index # for current adata (AAD) block */
+
+   symmetric_key     key;                     /* scheduled key for cipher */
    unsigned long     block_index;             /* index # for current data block */
    int               cipher,                  /* cipher idx */
                      tag_len,                 /* length of tag */
@@ -407,14 +393,9 @@ int ocb3_test(void);
 #define CCM_DECRYPT LTC_DECRYPT
 
 typedef struct {
-   unsigned char       PAD[16],              /* flags | Nonce N | l(m) */
-                       ctr[16],
-                       CTRPAD[16];
-
    symmetric_key       K;
-
    int                 cipher,               /* which cipher */
-                       taglen,               /* length of the tag (encoded in M value) */
+                       taglen,               /* length of the tag */
                        x;                    /* index in PAD */
 
    unsigned long       L,                    /* L value */
@@ -424,7 +405,10 @@ typedef struct {
                        current_aadlen,       /* length of the currently provided add */
                        noncelen;             /* length of the nonce */
 
-   unsigned char       CTRlen;
+   unsigned char       PAD[16],
+                       ctr[16],
+                       CTRPAD[16],
+                       CTRlen;
 } ccm_state;
 
 int ccm_init(ccm_state *ccm, int cipher,
@@ -460,7 +444,7 @@ int ccm_test(void);
 
 #endif /* LTC_CCM_MODE */
 
-#if defined(LTC_LRW_MODE) || defined(LTC_GCM_MODE)
+#if defined(LRW_MODE) || defined(LTC_GCM_MODE)
 void gcm_gf_mult(const unsigned char *a, const unsigned char *b, unsigned char *c);
 #endif
 
@@ -480,17 +464,12 @@ extern const unsigned char gcm_shift_table[];
 #define LTC_GCM_MODE_TEXT  2
 
 typedef struct {
+   symmetric_key       K;
    unsigned char       H[16],        /* multiplier */
                        X[16],        /* accumulator */
                        Y[16],        /* counter */
                        Y_0[16],      /* initial counter */
                        buf[16];      /* buffer for stuff */
-
-#ifdef LTC_GCM_TABLES
-   unsigned char       PC[16][256][16];  /* 16 tables of 8x128 */
-#endif
-
-   symmetric_key       K;
 
    int                 cipher,       /* which cipher */
                        ivmode,       /* Which mode is the IV in? */
@@ -499,6 +478,14 @@ typedef struct {
 
    ulong64             totlen,       /* 64-bit counter used for IV and AAD */
                        pttotlen;     /* 64-bit counter for the PT */
+
+#ifdef LTC_GCM_TABLES
+   unsigned char       PC[16][256][16]  /* 16 tables of 8x128 */
+#ifdef LTC_GCM_TABLES_SSE2
+__attribute__ ((aligned (16)))
+#endif
+;
+#endif
 } gcm_state;
 
 void gcm_mult_h(const gcm_state *gcm, unsigned char *I);
@@ -541,12 +528,11 @@ typedef struct {
    chacha_state chacha;
    ulong64 aadlen;
    ulong64 ctlen;
-   int aadflg, openssh_compat;
+   int aadflg;
 } chacha20poly1305_state;
 
-#define CHACHA20POLY1305_ENCRYPT          LTC_ENCRYPT
-#define CHACHA20POLY1305_DECRYPT          LTC_DECRYPT
-#define CHACHA20POLY1305_OPENSSH_COMPAT   2
+#define CHACHA20POLY1305_ENCRYPT LTC_ENCRYPT
+#define CHACHA20POLY1305_DECRYPT LTC_DECRYPT
 
 int chacha20poly1305_init(chacha20poly1305_state *st, const unsigned char *key, unsigned long keylen);
 int chacha20poly1305_setiv(chacha20poly1305_state *st, const unsigned char *iv, unsigned long ivlen);
@@ -565,24 +551,3 @@ int chacha20poly1305_memory(const unsigned char *key, unsigned long keylen,
 int chacha20poly1305_test(void);
 
 #endif /* LTC_CHACHA20POLY1305_MODE */
-#ifdef LTC_SIV_MODE
-
-int siv_encrypt_memory(                int  cipher,
-                       const unsigned char *key,    unsigned long  keylen,
-                       const unsigned char *ad[],   unsigned long  adlen[],
-                       const unsigned char *pt,     unsigned long  ptlen,
-                             unsigned char *ct,     unsigned long *ctlen);
-int siv_decrypt_memory(                int  cipher,
-                       const unsigned char *key,    unsigned long  keylen,
-                       const unsigned char *ad[],   unsigned long  adlen[],
-                       const unsigned char *ct,     unsigned long  ctlen,
-                             unsigned char *pt,     unsigned long *ptlen);
-int siv_memory(                int  cipher,           int  direction,
-               const unsigned char *key,    unsigned long  keylen,
-               const unsigned char *in,     unsigned long  inlen,
-                     unsigned char *out,    unsigned long *outlen,
-                                   ...) LTC_NULL_TERMINATED;
-int siv_test(void);
-
-#endif
-

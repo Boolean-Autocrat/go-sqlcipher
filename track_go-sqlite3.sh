@@ -14,10 +14,10 @@ cp -f $ltd/sqlite3_opt_unlock_notify.c .
 
 # copy Go files
 cp -f $ltd/*.go .
-rm -rf _example
-cp -r $ltd/_example .
-rm -rf upgrade
-cp -r $ltd/upgrade .
+# rm -rf _example
+# cp -r $ltd/_example .
+# rm -rf upgrade
+# cp -r $ltd/upgrade .
 
 echo "make sure to adjust sqlite3.go with sqlcipher pragmas!"
 echo "make sure to adjust import paths in _example directory!"

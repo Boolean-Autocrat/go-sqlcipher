@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/mattn/go-sqlite3"
+	sqlite3 "github.com/Boolean-Autocrat/go-sqlcipher"
 )
 
 type githubRepo struct {
@@ -62,13 +62,8 @@ func (v *ghRepoTable) Open() (sqlite3.VTabCursor, error) {
 	return &ghRepoCursor{0, repos}, nil
 }
 
-func (v *ghRepoTable) BestIndex(csts []sqlite3.InfoConstraint, ob []sqlite3.InfoOrderBy) (*sqlite3.IndexResult, error) {
-	used := make([]bool, len(csts))
-	return &sqlite3.IndexResult{
-		IdxNum: 0,
-		IdxStr: "default",
-		Used:   used,
-	}, nil
+func (v *ghRepoTable) BestIndex(cst []sqlite3.InfoConstraint, ob []sqlite3.InfoOrderBy) (*sqlite3.IndexResult, error) {
+	return &sqlite3.IndexResult{}, nil
 }
 
 func (v *ghRepoTable) Disconnect() error { return nil }
@@ -93,7 +88,7 @@ func (vc *ghRepoCursor) Column(c *sqlite3.SQLiteContext, col int) error {
 	return nil
 }
 
-func (vc *ghRepoCursor) Filter(idxNum int, idxStr string, vals []any) error {
+func (vc *ghRepoCursor) Filter(idxNum int, idxStr string, vals []interface{}) error {
 	vc.index = 0
 	return nil
 }

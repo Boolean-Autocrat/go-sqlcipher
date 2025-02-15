@@ -1,5 +1,5 @@
-//go:build !cgo && upgrade && ignore
-// +build !cgo,upgrade,ignore
+// +build !cgo
+// +build upgrade,ignore
 
 package main
 
@@ -98,25 +98,16 @@ func mergeFile(src string, dst string) error {
 func main() {
 	fmt.Println("Go-SQLite3 Upgrade Tool")
 
-	wd, err := os.Getwd()
-	if err != nil {
-		log.Fatal(err)
-	}
-	if filepath.Base(wd) != "upgrade" {
-		log.Printf("Current directory is %q but should run in upgrade directory", wd)
-		os.Exit(1)
-	}
-
 	// Download Amalgamation
 	_, amalgamation, err := download("sqlite-amalgamation-")
 	if err != nil {
-		log.Fatalf("Failed to download: sqlite-amalgamation; %s", err)
+		fmt.Println("Failed to download: sqlite-amalgamation; %s", err)
 	}
 
 	// Download Source
 	_, source, err := download("sqlite-src-")
 	if err != nil {
-		log.Fatalf("Failed to download: sqlite-src; %s", err)
+		fmt.Println("Failed to download: sqlite-src; %s", err)
 	}
 
 	// Create Amalgamation Zip Reader
@@ -136,11 +127,11 @@ func main() {
 		var f *os.File
 		switch path.Base(zf.Name) {
 		case "sqlite3.c":
-			f, err = os.Create("../sqlite3-binding.c")
+			f, err = os.Create("sqlite3.c")
 		case "sqlite3.h":
-			f, err = os.Create("../sqlite3-binding.h")
+			f, err = os.Create("sqlite3.h")
 		case "sqlite3ext.h":
-			f, err = os.Create("../sqlite3ext.h")
+			f, err = os.Create("sqlite3ext.h")
 		default:
 			continue
 		}
@@ -162,11 +153,7 @@ func main() {
 		for scanner.Scan() {
 			text := scanner.Text()
 			if text == `#include "sqlite3.h"` {
-				text = `#include "sqlite3-binding.h"
-#ifdef __clang__
-#define assert(condition) ((void)0)
-#endif
-`
+				text = `#include "sqlite3.h"`
 			}
 			_, err = fmt.Fprintln(f, text)
 			if err != nil {
@@ -195,9 +182,9 @@ func main() {
 		var f *os.File
 		switch path.Base(zf.Name) {
 		case "userauth.c":
-			f, err = os.Create("../userauth.c")
+			f, err = os.Create("userauth.c")
 		case "sqlite3userauth.h":
-			f, err = os.Create("../userauth.h")
+			f, err = os.Create("userauth.h")
 		default:
 			continue
 		}
@@ -220,10 +207,10 @@ func main() {
 	}
 
 	// Merge SQLite User Authentication into amalgamation
-	if err := mergeFile("../userauth.c", "../sqlite3-binding.c"); err != nil {
+	if err := mergeFile("userauth.c", "sqlite3.c"); err != nil {
 		log.Fatal(err)
 	}
-	if err := mergeFile("../userauth.h", "../sqlite3-binding.h"); err != nil {
+	if err := mergeFile("userauth.h", "sqlite3.h"); err != nil {
 		log.Fatal(err)
 	}
 

@@ -3,9 +3,10 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
 	"log"
 	"os"
+
+	_ "github.com/Boolean-Autocrat/go-sqlcipher"
 )
 
 func main() {
@@ -37,15 +38,12 @@ func main() {
 	}
 	defer stmt.Close()
 	for i := 0; i < 100; i++ {
-		_, err = stmt.Exec(i, fmt.Sprintf("こんにちは世界%03d", i))
+		_, err = stmt.Exec(i, fmt.Sprintf("こんにちわ世界%03d", i))
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
-	err = tx.Commit()
-	if err != nil {
-		log.Fatal(err)
-	}
+	tx.Commit()
 
 	rows, err := db.Query("select id, name from foo")
 	if err != nil {

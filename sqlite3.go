@@ -24,7 +24,7 @@ package sqlite3
 #cgo openbsd CFLAGS: -I/usr/local/include
 #cgo openbsd LDFLAGS: -L/usr/local/lib
 #ifndef USE_LIBSQLITE3
-#include "sqlite3-binding.h"
+#include "sqlite3.h"
 #else
 #include <sqlite3.h>
 #endif
@@ -381,7 +381,7 @@ type SQLiteStmt struct {
 	s      *C.sqlite3_stmt
 	t      string
 	closed bool
-	cls    bool // True if the statement was created by SQLiteConn.Query
+	cls    bool
 }
 
 // SQLiteResult implements sql.Result.
@@ -393,12 +393,12 @@ type SQLiteResult struct {
 // SQLiteRows implements driver.Rows.
 type SQLiteRows struct {
 	s        *SQLiteStmt
-	nc       int32 // Number of columns
-	cls      bool  // True if we need to close the parent statement in Close
+	nc       int
 	cols     []string
 	decltype []string
+	cls      bool
+	closed   bool
 	ctx      context.Context // no better alternative to pass context into Next() method
-	closemu  sync.Mutex
 }
 
 type functionInfo struct {
@@ -1109,7 +1109,8 @@ func (d *SQLiteDriver) Open(dsn string) (driver.Conn, error) {
 	writableSchema := -1
 	vfsName := ""
 	var cacheSize *int64
-
+	pragmaKey := ""
+	pragmaCipherPageSize := -1
 	pos := strings.IndexRune(dsn, '?')
 	if pos >= 1 {
 		params, err := url.ParseQuery(dsn[pos+1:])
@@ -1432,6 +1433,24 @@ func (d *SQLiteDriver) Open(dsn string) (driver.Conn, error) {
 			}
 		}
 
+		if val := params.Get("vfs"); val != "" {
+			vfsName = val
+		}
+
+		// _key
+		if val := params.Get("_key"); val != "" {
+			pragmaKey = val
+		}
+
+		// _pragma_cipher_page_size
+		if val := params.Get("_pragma_cipher_page_size"); val != "" {
+			pageSize, err := strconv.Atoi(val)
+			if err != nil {
+				return nil, fmt.Errorf("sqlite3: _pragma_cipher_page_size cannot be parsed: %s", err)
+			}
+			pragmaCipherPageSize = pageSize
+		}
+
 		// Cache size (_cache_size)
 		//
 		// https://sqlite.org/pragma.html#pragma_cache_size
@@ -1477,6 +1496,12 @@ func (d *SQLiteDriver) Open(dsn string) (driver.Conn, error) {
 		return nil, errors.New("sqlite succeeded without returning a database")
 	}
 
+	rv = C.sqlite3_busy_timeout(db, C.int(busyTimeout))
+	if rv != C.SQLITE_OK {
+		C.sqlite3_close_v2(db)
+		return nil, Error{Code: ErrNo(rv)}
+	}
+
 	exec := func(s string) error {
 		cs := C.CString(s)
 		rv := C.sqlite3_exec(db, cs, nil, nil, nil)
@@ -1485,6 +1510,25 @@ func (d *SQLiteDriver) Open(dsn string) (driver.Conn, error) {
 			return lastError(db)
 		}
 		return nil
+	}
+
+	// _key
+	if pragmaKey != "" {
+		query := fmt.Sprintf("PRAGMA key = \"%s\";", pragmaKey)
+		if err := exec(query); err != nil {
+			C.sqlite3_close_v2(db)
+			return nil, err
+		}
+	}
+
+	// _pragma_cipher_page_size
+	if pragmaCipherPageSize != -1 {
+		query := fmt.Sprintf("PRAGMA cipher_page_size = %d;",
+			pragmaCipherPageSize)
+		if err := exec(query); err != nil {
+			C.sqlite3_close_v2(db)
+			return nil, err
+		}
 	}
 
 	// Busy timeout
@@ -2008,12 +2052,14 @@ func (s *SQLiteStmt) query(ctx context.Context, args []driver.NamedValue) (drive
 
 	rows := &SQLiteRows{
 		s:        s,
-		nc:       int32(C.sqlite3_column_count(s.s)),
-		cls:      s.cls,
+		nc:       int(C.sqlite3_column_count(s.s)),
 		cols:     nil,
 		decltype: nil,
+		cls:      s.cls,
+		closed:   false,
 		ctx:      ctx,
 	}
+	runtime.SetFinalizer(rows, (*SQLiteRows).Close)
 
 	return rows, nil
 }
@@ -2110,28 +2156,24 @@ func (s *SQLiteStmt) Readonly() bool {
 
 // Close the rows.
 func (rc *SQLiteRows) Close() error {
-	rc.closemu.Lock()
-	defer rc.closemu.Unlock()
-	s := rc.s
-	if s == nil {
+	rc.s.mu.Lock()
+	if rc.s.closed || rc.closed {
+		rc.s.mu.Unlock()
 		return nil
 	}
-	rc.s = nil // remove reference to SQLiteStmt
-	s.mu.Lock()
-	if s.closed {
-		s.mu.Unlock()
-		return nil
-	}
+	rc.closed = true
 	if rc.cls {
-		s.mu.Unlock()
-		return s.Close()
+		rc.s.mu.Unlock()
+		return rc.s.Close()
 	}
-	rv := C.sqlite3_reset(s.s)
+	rv := C.sqlite3_reset(rc.s.s)
 	if rv != C.SQLITE_OK {
-		s.mu.Unlock()
-		return s.c.lastError()
+		rc.s.mu.Unlock()
+		return rc.s.c.lastError()
 	}
-	s.mu.Unlock()
+	rc.s.mu.Unlock()
+	rc.s = nil
+	runtime.SetFinalizer(rc, nil)
 	return nil
 }
 
@@ -2139,9 +2181,9 @@ func (rc *SQLiteRows) Close() error {
 func (rc *SQLiteRows) Columns() []string {
 	rc.s.mu.Lock()
 	defer rc.s.mu.Unlock()
-	if rc.s.s != nil && int(rc.nc) != len(rc.cols) {
+	if rc.s.s != nil && rc.nc != len(rc.cols) {
 		rc.cols = make([]string, rc.nc)
-		for i := 0; i < int(rc.nc); i++ {
+		for i := 0; i < rc.nc; i++ {
 			rc.cols[i] = C.GoString(C.sqlite3_column_name(rc.s.s, C.int(i)))
 		}
 	}
@@ -2151,7 +2193,7 @@ func (rc *SQLiteRows) Columns() []string {
 func (rc *SQLiteRows) declTypes() []string {
 	if rc.s.s != nil && rc.decltype == nil {
 		rc.decltype = make([]string, rc.nc)
-		for i := 0; i < int(rc.nc); i++ {
+		for i := 0; i < rc.nc; i++ {
 			rc.decltype[i] = strings.ToLower(C.GoString(C.sqlite3_column_decltype(rc.s.s, C.int(i))))
 		}
 	}

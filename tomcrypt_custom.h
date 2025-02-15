@@ -79,7 +79,6 @@
    #define LTC_RIJNDAEL
    #define LTC_BLOWFISH
    #define LTC_DES
-   #define LTC_SM4
    #define LTC_CAST5
 
    #define LTC_NO_MODES
@@ -115,9 +114,7 @@
 
    #define LTC_NO_MISC
    #define LTC_BASE64
-   #define LTC_BASE16
-   #define LTC_PEM
-#endif /* LTC_EASY */
+#endif
 
 /* The minimal set of functionality to run the tests */
 #ifdef LTC_MINIMAL
@@ -132,7 +129,7 @@
    #define LTC_TRY_URANDOM_FIRST
 
    #undef LTC_NO_FILE
-#endif /* LTC_MINIMAL */
+#endif
 
 /* Enable self-test test vector checking */
 #ifndef LTC_NO_TEST
@@ -195,7 +192,6 @@
 /* #define LTC_TWOFISH_SMALL */
 /* LTC_DES includes EDE triple-DES */
 #define LTC_DES
-#define LTC_SM4
 #define LTC_CAST5
 #define LTC_NOEKEON
 #define LTC_SKIPJACK
@@ -301,7 +297,6 @@
 #define LTC_CCM_MODE
 #define LTC_GCM_MODE
 #define LTC_CHACHA20POLY1305_MODE
-#define LTC_SIV_MODE
 
 /* Use 64KiB tables */
 #ifndef LTC_NO_TABLES
@@ -337,14 +332,11 @@
 /* Greg's SOBER128 stream cipher based PRNG */
 #define LTC_SOBER128
 
-#if !defined(_WIN32) && !defined(_WIN32_WCE)
 /* the *nix style /dev/random device */
 #define LTC_DEVRANDOM
 /* try /dev/urandom before trying /dev/random
  * are you sure you want to disable this? http://www.2uo.de/myths-about-urandom/ */
 #define LTC_TRY_URANDOM_FIRST
-#endif /* not Windows */
-
 /* rng_get_bytes() */
 #define LTC_RNG_GET_BYTES
 /* rng_make_prng() */
@@ -365,7 +357,7 @@
   #define LTC_YARROW_AES 2
 #endif
 
-#endif /* LTC_YARROW */
+#endif
 
 #ifdef LTC_FORTUNA
 
@@ -377,9 +369,9 @@
 
 /* with non-glibc or glibc 2.17+ prefer clock_gettime over gettimeofday */
 #if defined(__GLIBC__) && defined(__GLIBC_PREREQ)
-   #if __GLIBC_PREREQ(2, 17)
-      #define LTC_CLOCK_GETTIME
-   #endif
+#if __GLIBC_PREREQ(2, 17)
+  #define LTC_CLOCK_GETTIME
+#endif
 #elif defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112L
   #define LTC_CLOCK_GETTIME
 #endif
@@ -408,11 +400,6 @@
 /* number of pools (4..32) can save a bit of ram by lowering the count */
 #define LTC_FORTUNA_POOLS 32
 #endif
-
-/* at compile time you can decide whether fortuna uses the regular AES APIs
- * or whether it will use the 'encrypt_only' variants.
- * This is useful for custom builds of libtomcrypt for size-constrained targets. */
-/* #define LTC_FORTUNA_USE_ENCRYPT_ONLY */
 
 #endif /* LTC_FORTUNA */
 
@@ -524,8 +511,6 @@
 
 #define LTC_PBES
 
-#define LTC_PEM
-
 #endif /* LTC_NO_MISC */
 
 /* cleanup */
@@ -568,33 +553,6 @@
    #define LTC_ECC_SECP384R1
    #define LTC_ECC_SECP521R1
 #endif
-#endif /* LTC_MECC */
-
-#ifndef LTC_NO_FILE
-   /* buffer size for reading from a file via fread(..) */
-   #ifndef LTC_FILE_READ_BUFSIZE
-   #define LTC_FILE_READ_BUFSIZE 8192
-   #endif
-#endif
-
-#if defined(LTC_PEM)
-   /* Size of the line-buffer */
-   #ifndef LTC_PEM_DECODE_BUFSZ
-      #define LTC_PEM_DECODE_BUFSZ 80
-   #elif LTC_PEM_DECODE_BUFSZ < 72
-      #error "LTC_PEM_DECODE_BUFSZ shall not be < 72 bytes"
-   #endif
-   /* Size of the decoded data buffer */
-   #ifndef LTC_PEM_READ_BUFSIZE
-      #ifdef LTC_FILE_READ_BUFSIZE
-         #define LTC_PEM_READ_BUFSIZE LTC_FILE_READ_BUFSIZE
-      #else
-         #define LTC_PEM_READ_BUFSIZE 4096
-      #endif
-   #endif
-   #if defined(LTC_SSH)
-      #define LTC_PEM_SSH
-   #endif
 #endif
 
 #if defined(LTC_DER)
@@ -625,11 +583,6 @@
 #ifdef LTC_PKCS_8
    #define LTC_PADDING
    #define LTC_PBES
-#endif
-
-#if defined(LTC_CLEAN_STACK)
-/* if you're sure that you want to use it, remove the line below */
-   #error LTC_CLEAN_STACK is considered as broken
 #endif
 
 #if defined(LTC_PBES) && !defined(LTC_PKCS_5)
@@ -732,12 +685,21 @@
 #define LTC_MUTEX_UNLOCK(x)
 #define LTC_MUTEX_DESTROY(x)
 
-#endif /* LTC_PTHREAD */
+#endif
 
 /* Debuggers */
 
 /* define this if you use Valgrind, note: it CHANGES the way SOBER-128 and RC4 work (see the code) */
 /* #define LTC_VALGRIND */
+
+#endif
+
+#ifndef LTC_NO_FILE
+   /* buffer size for reading from a file via fread(..) */
+   #ifndef LTC_FILE_READ_BUFSIZE
+   #define LTC_FILE_READ_BUFSIZE 8192
+   #endif
+#endif
 
 /* ECC backwards compatibility */
 #if !defined(LTC_ECC_SECP112R1) && defined(LTC_ECC112)
@@ -772,5 +734,3 @@
 #define LTC_ECC_SECP521R1
 #undef LTC_ECC521
 #endif
-
-#endif /* TOMCRYPT_CUSTOM_H_ */

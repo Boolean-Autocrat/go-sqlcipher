@@ -37,11 +37,12 @@ func init() {
 		panic(err)
 	}
 	dbname := filepath.Join(tmpdir, "sqlcipher_test")
-	dbnameWithDSN := dbname + fmt.Sprintf("?_pragma_key=%s&_pragma_cipher_page_size=4096", key)
+	dbnameWithDSN := dbname + fmt.Sprintf("?_key=%s&_pragma_cipher_page_size=4096", key)
 	db, err = sql.Open("sqlite3", dbnameWithDSN)
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println(dbnameWithDSN)
 	_, err = db.Exec(tables)
 	if err != nil {
 		panic(err)
@@ -99,6 +100,22 @@ func TestSQLCipherParallelSelect(t *testing.T) {
 	}
 }
 
+func TestSQLCipherVersion(t *testing.T) {
+	tmpdir, err := ioutil.TempDir("", testDir)
+	require.NoError(t, err)
+	defer os.RemoveAll(tmpdir)
+	dbname := filepath.Join(tmpdir, "unencrypted.sqlite")
+	db, err := sql.Open("sqlite3", dbname)
+	require.NoError(t, err)
+	defer db.Close()
+	_, err = db.Exec(tables)
+	require.NoError(t, err)
+	encrypted, err := sqlite3.IsEncrypted(dbname)
+	if assert.NoError(t, err) {
+		assert.False(t, encrypted)
+	}
+}
+
 func TestSQLCipherIsEncryptedFalse(t *testing.T) {
 	tmpdir, err := ioutil.TempDir("", testDir)
 	require.NoError(t, err)
@@ -123,7 +140,7 @@ func TestSQLCipherIsEncryptedTrue(t *testing.T) {
 	var key [32]byte
 	_, err = io.ReadFull(rand.Reader, key[:])
 	require.NoError(t, err)
-	dbnameWithDSN := dbname + fmt.Sprintf("?_pragma_key=x'%s'",
+	dbnameWithDSN := dbname + fmt.Sprintf("?_key=x'%s'",
 		hex.EncodeToString(key[:]))
 	db, err := sql.Open("sqlite3", dbnameWithDSN)
 	require.NoError(t, err)
@@ -136,52 +153,6 @@ func TestSQLCipherIsEncryptedTrue(t *testing.T) {
 	}
 }
 
-func TestSQLCipher3DB(t *testing.T) {
-	dbname := filepath.Join("testdata", "sqlcipher3.sqlite3")
-	dbnameWithDSN := dbname + "?_pragma_key=passphrase&_pragma_cipher_page_size=4096"
-	// make sure DB is encrypted
-	encrypted, err := sqlite3.IsEncrypted(dbname)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !encrypted {
-		t.Fatal("go-sqlcipher: DB not encrypted")
-	}
-	// open DB for testing
-	db, err := sql.Open("sqlite3", dbnameWithDSN)
-	if err != nil {
-		t.Fatal(err)
-	}
-	// should fail
-	_, err = db.Exec("SELECT count(*) FROM sqlite_master;")
-	if err == nil {
-		t.Fatal(errors.New("opening a SQLCipher 3 database with SQLCipher 4 should fail"))
-	}
-}
-
-func TestSQLCipher4DB(t *testing.T) {
-	dbname := filepath.Join("testdata", "sqlcipher4.sqlite3")
-	dbnameWithDSN := dbname + "?_pragma_key=passphrase&_pragma_cipher_page_size=4096"
-	// make sure DB is encrypted
-	encrypted, err := sqlite3.IsEncrypted(dbname)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !encrypted {
-		t.Fatal("go-sqlcipher: DB not encrypted")
-	}
-	// open DB for testing
-	db, err := sql.Open("sqlite3", dbnameWithDSN)
-	if err != nil {
-		t.Fatal(err)
-	}
-	// should succeed
-	_, err = db.Exec("SELECT count(*) FROM sqlite_master;")
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
 func ExampleIsEncrypted() {
 	// create random key
 	var key [32]byte
@@ -191,7 +162,7 @@ func ExampleIsEncrypted() {
 	}
 	// set DB name
 	dbname := "go-sqlcipher.sqlite"
-	dbnameWithDSN := dbname + fmt.Sprintf("?_pragma_key=x'%s'",
+	dbnameWithDSN := dbname + fmt.Sprintf("?_key=x'%s'",
 		hex.EncodeToString(key[:]))
 	// create encrypted DB file
 	db, err := sql.Open("sqlite3", dbnameWithDSN)
